@@ -23,6 +23,8 @@ nameSumJointForce = ""
 nameSumJointMoment = ""
 nameSumContactForce = ""
 nameSumContactMoment = ""
+nameSumBeamForce = ""
+nameSumBeamMoment = ""
 
 user_DIR = wbjn.ExecuteCommand(ExtAPI, "returnValue(GetUserFilesDirectory())")
 
@@ -190,171 +192,128 @@ def createAccelerationForce(mass, accelerationTable):
     return forceTable
 
 
-def combineForceTables(listOfTables, nameList, nameSum):
+def isEmpty(obj):
+    return not obj or len(obj) == 0
+
+def combineTables(listOfTables, nameList, nameSum, data_type):
     """
     Kombiniert Tabellen nebeneinander:
-    - Erste Spalte: Zeit (nur aus erster Tabelle)
-    - Dann: X/Y/Z-Kräfte je Eintrag in listOfTables (ohne deren Zeitspalten)
-    - Optional: Abschließend Summenspalten (nur wenn nameSum gesetzt ist)
+    - Erste Spalte: Zeit (aus erster Tabelle)
+    - Dann: X/Y/Z- oder Beam-Werte je Tabelle
+    - Optional: Summenspalten (wenn nameSum gesetzt ist)
+
+    Unterstützte data_type-Werte:
+        "force"       → ["X [N]", "Y [N]", "Z [N]"]
+        "moment"      → ["X [Nmm]", "Y [Nmm]", "Z [Nmm]"]
+        "beamForce"   → ["Axial [N]", "Quer I [N]", "Quer J [N]"]
+        "beamMoment"  → ["Torsion [Nmm]", "Biegung I [Nmm]", "Biegung J [Nmm]"]
     """
+
     if len(listOfTables) != len(nameList):
         print("Fehler: Tabellen- und Namensanzahl stimmen nicht überein.")
         return []
-    
+
     if isEmpty(nameList):
         return []
 
+    # Achsen-/Spaltenüberschriften nach Typ definieren
+    if data_type == "force":
+        headers = ["X [N]", "Y [N]", "Z [N]"]
+    elif data_type == "moment":
+        headers = ["X [Nmm]", "Y [Nmm]", "Z [Nmm]"]
+    elif data_type == "beamForce":
+        headers = ["Axial [N]", "Quer I [N]", "Quer J [N]"]
+    elif data_type == "beamMoment":
+        headers = ["Torsion [Nmm]", "Biegung I [Nmm]", "Biegung J [Nmm]"]
+    else:
+        print("Unbekannter data_type: " + str(data_type))
+        return []
+
     combinedTable = []
-    maxLen = max(len(table) for table in listOfTables)
+    maxLen = 0
+    for table in listOfTables:
+        if len(table) > maxLen:
+            maxLen = len(table)
 
     # Tabellen auf gleiche Länge bringen
     for i in range(len(listOfTables)):
         while len(listOfTables[i]) < maxLen:
-            listOfTables[i].append([""] * 4)
+            listOfTables[i].append([""] * (len(headers) + 1))
 
-    # Erste Zeile: Gruppennamen
+    # Kopfzeile 1: Gruppennamen
     headerLine1 = ["", ""]
     for name in nameList:
-        headerLine1 += [name, "", ""]
-    if nameSum:  # Summen-Header nur, wenn nameSum gesetzt ist
-        headerLine1 += [nameSum, "", ""]
+        headerLine1 += [name] + [""] * (len(headers) - 1)
+    if nameSum:
+        headerLine1 += [nameSum] + [""] * (len(headers) - 1)
     combinedTable.append(headerLine1)
 
-    # Zweite Zeile: Fixe Achsen
+    # Kopfzeile 2: Achsen/Bezeichnungen
     headerLine2 = ["Time [s]"]
     for _ in nameList:
-        headerLine2 += ["X [N]", "Y [N]", "Z [N]"]
+        headerLine2 += headers
     if nameSum:
-        headerLine2 += ["X [N]", "Y [N]", "Z [N]"]
+        headerLine2 += headers
     combinedTable.append(headerLine2)
 
-    # Datenzeilen
+    # Datenzeilen aufbauen
     for rowIndex in range(1, maxLen):
         row = []
 
-        # Zeit aus erster Tabelle
+        # Zeitwert aus erster Tabelle
         try:
             time = listOfTables[0][rowIndex][0]
         except:
             time = ""
         row.append(time)
 
-        fx_total = 0.0
-        fy_total = 0.0
-        fz_total = 0.0
+        # Summe initialisieren
+        sums = [0.0] * len(headers)
 
         for table in listOfTables:
-            try:
-                fx = float(table[rowIndex][1].replace(",", ".")) if len(table[rowIndex]) > 1 else 0.0
-                fy = float(table[rowIndex][2].replace(",", ".")) if len(table[rowIndex]) > 2 else 0.0
-                fz = float(table[rowIndex][3].replace(",", ".")) if len(table[rowIndex]) > 3 else 0.0
-            except:
-                fx, fy, fz = 0.0, 0.0, 0.0
+            values = []
+            for i in range(len(headers)):
+                try:
+                    valStr = table[rowIndex][i + 1]
+                    val = float(str(valStr).replace(",", "."))
+                except:
+                    val = 0.0
+                values.append(val)
+                sums[i] += val
 
-            row += [str(fx), str(fy), str(fz)]
+            # Werte zur Zeile hinzufügen
+            for v in values:
+                row.append(str(v))
 
-            fx_total += fx
-            fy_total += fy
-            fz_total += fz
-
-        # Summenspalten nur anhängen, wenn nameSum gesetzt ist
+        # Summenzeile anhängen
         if nameSum:
-            row += [str(fx_total), str(fy_total), str(fz_total)]
+            for s in sums:
+                row.append(str(s))
 
         combinedTable.append(row)
 
     return combinedTable
 
 
-def combineMomentTables(listOfTables, nameList, nameSum):
+def cleanBCTable(rawTable, data_type):
     """
-    Kombiniert Tabellen nebeneinander:
-    - Erste Spalte: Zeit (nur aus erster Tabelle)
-    - Dann: X/Y/Z-Kräfte je Eintrag in listOfTables (ohne deren Zeitspalten)
-    - Optional: Abschließend Summenspalten (nur wenn nameSum gesetzt ist)
-    """
-    if len(listOfTables) != len(nameList):
-        print("Fehler: Tabellen- und Namensanzahl stimmen nicht überein.")
-        return []
-    
-    if isEmpty(nameList):
-        return []
-
-    combinedTable = []
-    maxLen = max(len(table) for table in listOfTables)
-
-    # Tabellen auf gleiche Länge bringen
-    for i in range(len(listOfTables)):
-        while len(listOfTables[i]) < maxLen:
-            listOfTables[i].append([""] * 4)
-
-    # Erste Zeile: Gruppennamen
-    headerLine1 = ["", ""]
-    for name in nameList:
-        headerLine1 += [name, "", ""]
-    if nameSum:  # Summen-Header nur, wenn nameSum gesetzt ist
-        headerLine1 += [nameSum, "", ""]
-    combinedTable.append(headerLine1)
-
-    # Zweite Zeile: Fixe Achsen
-    headerLine2 = ["Time [s]"]
-    for _ in nameList:
-        headerLine2 += ["X [Nmm]", "Y [Nmm]", "Z [Nmm]"]
-    if nameSum:
-        headerLine2 += ["X [Nmm]", "Y [Nmm]", "Z [Nmm]"]
-    combinedTable.append(headerLine2)
-
-    # Datenzeilen
-    for rowIndex in range(1, maxLen):
-        row = []
-
-        # Zeit aus erster Tabelle
-        try:
-            time = listOfTables[0][rowIndex][0]
-        except:
-            time = ""
-        row.append(time)
-
-        fx_total = 0.0
-        fy_total = 0.0
-        fz_total = 0.0
-
-        for table in listOfTables:
-            try:
-                fx = float(table[rowIndex][1].replace(",", ".")) if len(table[rowIndex]) > 1 else 0.0
-                fy = float(table[rowIndex][2].replace(",", ".")) if len(table[rowIndex]) > 2 else 0.0
-                fz = float(table[rowIndex][3].replace(",", ".")) if len(table[rowIndex]) > 3 else 0.0
-            except:
-                fx, fy, fz = 0.0, 0.0, 0.0
-
-            row += [str(fx), str(fy), str(fz)]
-
-            fx_total += fx
-            fy_total += fy
-            fz_total += fz
-
-        # Summenspalten nur anhängen, wenn nameSum gesetzt ist
-        if nameSum:
-            row += [str(fx_total), str(fy_total), str(fz_total)]
-
-        combinedTable.append(row)
-
-    return combinedTable
-
-
-
-def cleanBCForceTable(rawTable):
-    """
-    Wandelt ein Raw-Table mit möglichen X, Y, Z und Total-Spalten in ein sauberes Format um:
-    ["Time [s]", "X [N]", "Y [N]", "Z [N]"]
-
-    Notewendig bei Lagerreaktionen, wo der Input Total mitgeschleppt wird
+    Wandelt ein Raw-Table mit möglichen X, Y, Z und Total-Spalten in ein sauberes Format um.
+    Gibt eine Tabelle im Format zurück:
+        - "force"  → ["Time [s]", "X [N]", "Y [N]", "Z [N]"]
+        - "moment" → ["Time [s]", "X [Nmm]", "Y [Nmm]", "Z [Nmm]"]
 
     Alle fehlenden Richtungen werden mit 0 ersetzt.
     Die Total-Spalte wird ignoriert.
     """
+
     if not rawTable or len(rawTable) < 2:
         return []
+
+    # Einheit je nach Datentyp
+    if str(data_type).lower() == "moment":
+        unit = "Nmm"
+    else:
+        unit = "N"
 
     header = rawTable[0]
     time_index = -1
@@ -362,42 +321,42 @@ def cleanBCForceTable(rawTable):
     y_index = -1
     z_index = -1
 
-    # Spaltenindexe ermitteln
-    for i, col in enumerate(header):
-        col_lower = col.lower()
-        if "time" in col_lower:
+    # Spaltenindexe suchen
+    for i in range(len(header)):
+        col = str(header[i]).lower()
+        if "time" in col:
             time_index = i
-        elif "(x)" in col_lower:
+        elif "(x)" in col:
             x_index = i
-        elif "(y)" in col_lower:
+        elif "(y)" in col:
             y_index = i
-        elif "(z)" in col_lower:
+        elif "(z)" in col:
             z_index = i
-        elif "(total)" in col_lower:
+        elif "(total)" in col:
             continue  # explizit ignorieren
 
-    # Header für neue Tabelle
+    # Neue Tabelle initialisieren
     cleanedTable = []
-    cleanedTable.append(["Time [s]", "X [N]", "Y [N]", "Z [N]"])
+    cleanedTable.append(["Time [s]", "X [%s]" % unit, "Y [%s]" % unit, "Z [%s]" % unit])
 
-    # Datenzeilen aufbauen
-    for row in rawTable[1:]:
+    # Datenzeilen durchgehen
+    for i in range(1, len(rawTable)):
+        row = rawTable[i]
         newRow = []
 
-        # Zeitwert
+        # Zeit
         try:
-            time = row[time_index] if time_index != -1 else ""
+            timeVal = row[time_index] if time_index != -1 else ""
         except:
-            time = ""
+            timeVal = ""
+        newRow.append(timeVal)
 
-        newRow.append(time)
-
-        # X/Y/Z – prüfen, ob vorhanden, sonst 0
+        # X, Y, Z – wenn nicht vorhanden → 0
         for idx in [x_index, y_index, z_index]:
             try:
-                val = row[idx].replace(",", ".")
+                val = str(row[idx]).replace(",", ".")
                 val = float(val)
-                newRow.append(str(float(val)))
+                newRow.append(str(val))
             except:
                 newRow.append("0.0")
 
@@ -406,46 +365,54 @@ def cleanBCForceTable(rawTable):
     return cleanedTable
 
 
-def cleanBCMomentTable(rawTable):
+def splitBeamTable(rawTable):
     """
-    Wandelt ein Raw-Table mit möglichen X, Y, Z und Total-Spalten in ein sauberes Format um:
-    ["Time [s]", "X [Nmm]", "Y [Nmm]", "Z [Nmm]"]
+    Zerlegt eine Beam-Ergebnistabelle in zwei Tabellen:
+    - Kräfte:    ["Time [s]", "Axial [N]", "Quer I [N]", "Quer J [N]"]
+    - Momente:   ["Time [s]", "Torsion [Nmm]", "Biegung I [Nmm]", "Biegung J [Nmm]"]
 
-    Notewendig bei Lagerreaktionen, wo der Input Total mitgeschleppt wird
-
-    Alle fehlenden Richtungen werden mit 0 ersetzt.
-    Die Total-Spalte wird ignoriert.
+    Funktioniert mit typischen Beam Probe-Ergebnissen aus Ansys Mechanical.
     """
     if not rawTable or len(rawTable) < 2:
-        return []
+        return [], []
 
     header = rawTable[0]
+    
+    # Indexe für relevante Spalten
     time_index = -1
-    x_index = -1
-    y_index = -1
-    z_index = -1
+    axial_index = -1
+    shearI_index = -1
+    shearJ_index = -1
+    torque_index = -1
+    momentI_index = -1
+    momentJ_index = -1
 
-    # Spaltenindexe ermitteln
-    for i, col in enumerate(header):
-        col_lower = col.lower()
-        if "time" in col_lower:
+    for i in range(len(header)):
+        col = str(header[i]).lower()
+        if "time" in col:
             time_index = i
-        elif "(x)" in col_lower:
-            x_index = i
-        elif "(y)" in col_lower:
-            y_index = i
-        elif "(z)" in col_lower:
-            z_index = i
-        elif "(total)" in col_lower:
-            continue  # explizit ignorieren
+        elif "axial" in col:
+            axial_index = i
+        elif "shear" in col and "at i" in col:
+            shearI_index = i
+        elif "shear" in col and "at j" in col:
+            shearJ_index = i
+        elif "torque" in col:
+            torque_index = i
+        elif "moment" in col and "at i" in col:
+            momentI_index = i
+        elif "moment" in col and "at j" in col:
+            momentJ_index = i
 
-    # Header für neue Tabelle
-    cleanedTable = []
-    cleanedTable.append(["Time [s]", "X [Nmm]", "Y [Nmm]", "Z [Nmm]"])
+    # Tabellenköpfe definieren
+    forceTable = []
+    momentTable = []
 
-    # Datenzeilen aufbauen
-    for row in rawTable[1:]:
-        newRow = []
+    forceTable.append(["Time [s]", "Axial [N]", "Quer I [N]", "Quer J [N]"])
+    momentTable.append(["Time [s]", "Torsion [Nmm]", "Biegung I [Nmm]", "Biegung J [Nmm]"])
+
+    for i in range(1, len(rawTable)):
+        row = rawTable[i]
 
         # Zeitwert
         try:
@@ -453,20 +420,43 @@ def cleanBCMomentTable(rawTable):
         except:
             time = ""
 
-        newRow.append(time)
+        # Kraftwerte
+        try:
+            axial = float(str(row[axial_index]).replace(",", ".")) if axial_index != -1 else 0.0
+        except:
+            axial = 0.0
 
-        # X/Y/Z – prüfen, ob vorhanden, sonst 0
-        for idx in [x_index, y_index, z_index]:
-            try:
-                val = row[idx].replace(",", ".")
-                val = float(val)
-                newRow.append(str(float(val)))
-            except:
-                newRow.append("0.0")
+        try:
+            shearI = float(str(row[shearI_index]).replace(",", ".")) if shearI_index != -1 else 0.0
+        except:
+            shearI = 0.0
 
-        cleanedTable.append(newRow)
+        try:
+            shearJ = float(str(row[shearJ_index]).replace(",", ".")) if shearJ_index != -1 else 0.0
+        except:
+            shearJ = 0.0
 
-    return cleanedTable
+        forceTable.append([time, str(axial), str(shearI), str(shearJ)])
+
+        # Momentenwerte
+        try:
+            torque = float(str(row[torque_index]).replace(",", ".")) if torque_index != -1 else 0.0
+        except:
+            torque = 0.0
+
+        try:
+            momentI = float(str(row[momentI_index]).replace(",", ".")) if momentI_index != -1 else 0.0
+        except:
+            momentI = 0.0
+
+        try:
+            momentJ = float(str(row[momentJ_index]).replace(",", ".")) if momentJ_index != -1 else 0.0
+        except:
+            momentJ = 0.0
+
+        momentTable.append([time, str(torque), str(momentI), str(momentJ)])
+
+    return forceTable, momentTable
 
 
 def convertLoadForceTable(rawTable):
@@ -563,7 +553,6 @@ def combineResultTable(loadTable, bcTable, nameloads="Gesamtlast", nameBCs="Gesa
     return resultTable
 
 
-
 def write_CSV(path, file_name, data, seperator="."):
     """CSV-Datei schreiben – mit Ersetzen von Dezimalpunkten für IronPython (ACT)"""
 
@@ -621,6 +610,7 @@ resultMomentType = Ansys.ACT.Automation.Mechanical.Results.ProbeResults.MomentRe
 bcType = LocationDefinitionMethod.BoundaryCondition
 contactType = LocationDefinitionMethod.ContactRegion
 jointType = Ansys.ACT.Automation.Mechanical.Results.ProbeResults.JointProbe
+beamType = Ansys.ACT.Automation.Mechanical.Results.ProbeResults.BeamProbe
 probeForceType = ProbeResultType.ForceReaction
 probeMomentType = ProbeResultType.MomentReaction
 
@@ -664,7 +654,7 @@ for analysisIndex, analysis in enumerate(ExtAPI.DataModel.AnalysisList):
             forceTable = convertLoadForceTable(readTabularData(item,"."))
             tableListLoads.append(forceTable)
 
-    combinedLoadTable = combineForceTables(tableListLoads, nameListLoads, nameSumLoad)
+    combinedLoadTable = combineTables(tableListLoads, nameListLoads, nameSumLoad, "force")
 
 
     # -------
@@ -679,10 +669,10 @@ for analysisIndex, analysis in enumerate(ExtAPI.DataModel.AnalysisList):
                 nameListBc.append(adjustName(item.Name))
 
                 rawTable = readTabularData(item, ".")
-                cleanedTable = cleanBCForceTable(rawTable)
+                cleanedTable = cleanBCTable(rawTable,"force")
                 tableListBc.append(cleanedTable)
 
-    combinedBcTable = combineForceTables(tableListBc, nameListBc, nameSumBc)
+    combinedBcTable = combineTables(tableListBc, nameListBc, nameSumBc, "force")
 
 
     # -------
@@ -706,10 +696,10 @@ for analysisIndex, analysis in enumerate(ExtAPI.DataModel.AnalysisList):
                 nameListJointForce.append(adjustName(item.Name))
 
                 rawTable = readTabularData(item, ".")
-                cleanedTable = cleanBCForceTable(rawTable)
+                cleanedTable = cleanBCTable(rawTable,"force")
                 tableListJointForce.append(cleanedTable)
 
-    combinedJointForceTable = combineForceTables(tableListJointForce, nameListJointForce, nameSumJointForce)
+    combinedJointForceTable = combineTables(tableListJointForce, nameListJointForce, nameSumJointForce, "force")
 
     # Moment
     nameListJointMoment = []
@@ -721,10 +711,10 @@ for analysisIndex, analysis in enumerate(ExtAPI.DataModel.AnalysisList):
                 nameListJointMoment.append(adjustName(item.Name))
 
                 rawTable = readTabularData(item, ".")
-                cleanedTable = cleanBCMomentTable(rawTable)
+                cleanedTable = cleanBCTable(rawTable,"moment")
                 tableListJointMoment.append(cleanedTable)
 
-    combinedJointMomentTable = combineMomentTables(tableListJointMoment, nameListJointMoment, nameSumJointMoment)
+    combinedJointMomentTable = combineTables(tableListJointMoment, nameListJointMoment, nameSumJointMoment, "moment")
 
 
     # -------
@@ -741,10 +731,10 @@ for analysisIndex, analysis in enumerate(ExtAPI.DataModel.AnalysisList):
                 nameListContactForce.append(adjustName(item.Name))
 
                 rawTable = readTabularData(item, ".")
-                cleanedTable = cleanBCForceTable(rawTable)
+                cleanedTable = cleanBCTable(rawTable,"force")
                 tableListContactForce.append(cleanedTable)
 
-    combinedContactForceTable = combineForceTables(tableListContactForce, nameListContactForce, nameSumContactForce)
+    combinedContactForceTable = combineTables(tableListContactForce, nameListContactForce, nameSumContactForce, "force")
 
     # Moment
     nameListContactMoment = []
@@ -756,10 +746,30 @@ for analysisIndex, analysis in enumerate(ExtAPI.DataModel.AnalysisList):
                 nameListContactMoment.append(adjustName(item.Name))
 
                 rawTable = readTabularData(item, ".")
-                cleanedTable = cleanBCMomentTable(rawTable)
+                cleanedTable = cleanBCTable(rawTable,"moment")
                 tableListContactMoment.append(cleanedTable)
 
-    combinedContactMomentTable = combineMomentTables(tableListContactMoment, nameListContactMoment, nameSumContactMoment)
+    combinedContactMomentTable = combineTables(tableListContactMoment, nameListContactMoment, nameSumContactMoment, "force")
+
+
+    # -------
+    # [6] Balken einlesen
+    # -------
+    nameListBeams = []
+    tableListBeamsForce = []
+    tableListBeamsMoment = []
+
+    for item in analysis.Solution.Children:
+        if item.GetType() == beamType:
+            nameListBeams.append(adjustName(item.Name))
+            rawTable = readTabularData(item, ".")
+            beamForceTable, beamMomenttable = splitBeamTable(rawTable)
+
+            tableListBeamsForce.append(beamForceTable)
+            tableListBeamsMoment.append(beamMomenttable)      
+
+    combinedBeamForceTable = combineTables(tableListBeamsForce, nameListBeams, nameSumBeamForce, "beamForce")
+    combinedBeamMomentTable = combineTables(tableListBeamsMoment, nameListBeams, nameSumBeamMoment, "beamMoment")
 
 
     # -------
@@ -786,6 +796,12 @@ for analysisIndex, analysis in enumerate(ExtAPI.DataModel.AnalysisList):
 
     if not isEmpty(nameListContactMoment):
         write_CSV(analysis_DIR, "07_Kontaktmoment", combinedContactMomentTable, seperator)
+
+    if not isEmpty(nameListBeams):
+        write_CSV(analysis_DIR, "08_Balkenkraft", combinedBeamForceTable, seperator)
+
+    if not isEmpty(nameListBeams):
+        write_CSV(analysis_DIR, "09_Balkenmoment", combinedBeamMomentTable, seperator)
 
 
 # Stelle initiales Einheitensstem wieder her
