@@ -33,10 +33,12 @@ Kräfte für:
 - Displacement,
 - Remote Displacement,
 - Joints,
+- Beams,
 - Bonded Contacts.
 
 Momente für:
 - Joints,
+- Beams,
 - Bonded Contacts.
 
 Sonstiges:
@@ -44,7 +46,7 @@ Sonstiges:
 - Einheitensystem wird berücksichtigt
 
 ## Was fehlt?
-- Reaktionslasten von Balken, Federn, usw.
+- Reaktionslasten von Federn, usw.
 - Kräfte in Folge von Drücken als Lastvektor,
 - Momente an Randbedingungen.
 
