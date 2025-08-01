@@ -26,7 +26,7 @@ Dieses Python-Snippet lässt sich als Button in Mechanical importieren, um Reakt
 5. Die CSV-Datein finden sich nun unter: ".../Pfad-zum-Workbench-Projekt/user_files/".
 
 ### Schraubenasuwertung
-1. In Connection Beams oder Joints erstellen.
+1. In Connection: Beam oder Joint erstellen.
 2. Im Namen muss z. B. "M16" enthalten sein, um die Connection als Schraube mit dem Durchmesser 16 zu erkennen.
 3. Standardmäßig wird von einer Festigkeit von 640 MPa ausgegangen.
 4. (Optional) Im Namen die Festigkeitsklasse z. B. "8.8" ergänzen, umd die Streckgrenze von "640 MPa" zu berücksichtigen.
