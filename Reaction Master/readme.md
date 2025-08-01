@@ -26,10 +26,10 @@ Dieses Python-Snippet lässt sich als Button in Mechanical importieren, um Reakt
 5. Die CSV-Datein finden sich nun unter: ".../Pfad-zum-Workbench-Projekt/user_files/".
 
 ### Schraubenasuwertung
-1. In Connection: Beam oder Joint erstellen.
-2. Im Namen muss z. B. "M16" enthalten sein, um die Connection als Schraube mit dem Durchmesser 16 zu erkennen.
+1. In Connection: Beam oder Joint-Objekt erstellen.
+2. Im Namen des Objekts muss irgendwo der Nenndurchmesser mit dem Präfix "M" auftauchen, z. B. "M16 Schraube links", um die Connection als Schraube mit dem Durchmesser 16 zu erkennen.
 3. Standardmäßig wird von einer Festigkeit von 640 MPa ausgegangen.
-4. (Optional) Im Namen die Festigkeitsklasse z. B. "8.8" ergänzen, umd die Streckgrenze von "640 MPa" zu berücksichtigen.
+4. (Optional) Im Namen irgendwo die Festigkeitsklasse ergänzen, z. B. "4.6", umd eine Streckgrenze von 240 MPa zu berücksichtigen.
 5. Die Schraubenauslastung findet sich in ".../Pfad-zum-Workbench-Projekt/user_files/10_Schraubenauslastungen.csv"
 
 Hinweis: Die Annahme ist, dass die lokale x-Richtung der Joints stets axial ausgerichtet ist (Normalfall) 
