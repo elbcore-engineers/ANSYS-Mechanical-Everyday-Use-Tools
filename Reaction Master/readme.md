@@ -32,7 +32,9 @@ Dieses Python-Snippet lässt sich als Button in Mechanical importieren, um Reakt
 4. (Optional) Im Namen irgendwo die Festigkeitsklasse ergänzen, z. B. "4.6", umd eine Streckgrenze von 240 MPa zu berücksichtigen.
 5. Die Schraubenauslastung findet sich in ".../Pfad-zum-Workbench-Projekt/user_files/10_Schraubenauslastungen.csv"
 
-Hinweis: Die Annahme ist, dass die lokale x-Richtung der Joints stets axial ausgerichtet ist (Normalfall) 
+Hinweis: 
+- Die Annahme ist, dass die lokale x-Richtung der Joints stets axial ausgerichtet ist (Normalfall),
+- Normalspannungen und Biegespannungen werden betragsmäßig überlagert (es kommt zu keiner Abminderung bei unterschiedlichen Vorzeichen oder Entlastungen bei Druckspannungen)
    
 ## Was ist in der neuesten Version inkludiert?
 Kräfte für:
