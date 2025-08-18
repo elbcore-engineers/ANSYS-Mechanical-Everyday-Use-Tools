@@ -565,15 +565,26 @@ def combineResultTable(loadTable, bcTable, nameloads="Gesamtlast", nameBCs="Gesa
 
 
 def collectAllConnections(container, connectionList):
-    # container.Children enthält sowohl Gruppen als auch direkte Connections
-    for item in container.Children:
-        itemType = item.GetType()
-        if itemType in connectionGroupTypes:
-            # rekursiv: weitere Gruppe durchlaufen
-            collectAllConnections(item, connectionList)
-        else:
-            # direkte Connection gefunden
-            connectionList.append(item)
+    """
+    Sammelt rekursiv alle Connections aus einer beliebig
+    verschachtelten Containerstruktur.
+
+    container      : aktuelles Connection-Objekt oder -Gruppe
+    connectionList : Liste zum Auffüllen
+    """
+    # Manche Container haben Children, andere sind selbst schon Connections
+    if hasattr(container, "Children"):
+        for item in container.Children:
+            itemType = item.GetType()
+            if itemType in connectionGroupTypes:
+                # rekursiv in Untergruppe
+                collectAllConnections(item, connectionList)
+            else:
+                # direkte Connection gefunden
+                connectionList.append(item)
+    else:
+        # kein Container, sondern direkte Connection
+        connectionList.append(container)
             
 
 def getBoltDataFromName(text): 
@@ -933,16 +944,16 @@ for analysisIndex, analysis in enumerate(ExtAPI.DataModel.AnalysisList):
     # -------
 
     # Hauptliste für alle Connections
+   # Hauptliste für alle Connections
     allConnections = []
-    
+
+    # Start: oberste Ebene durchlaufen
     for item in Model.Connections.Children:
-        itemType = item.GetType()
-        if itemType in connectionGroupTypes:
-            # rekursiv nach unten
-            collectAllConnections(item, allConnections)
-        else:
-            # direkt enthaltene Connection (nicht gruppiert)
-            allConnections.append(item)
+        collectAllConnections(item, allConnections)
+
+    # Ausgabe testen
+    for item in allConnections:
+        print(item.Name)
     
 
     boltConnections = []
