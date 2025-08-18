@@ -944,17 +944,12 @@ for analysisIndex, analysis in enumerate(ExtAPI.DataModel.AnalysisList):
     # -------
 
     # Hauptliste für alle Connections
-   # Hauptliste für alle Connections
     allConnections = []
 
     # Start: oberste Ebene durchlaufen
     for item in Model.Connections.Children:
         collectAllConnections(item, allConnections)
 
-    # Ausgabe testen
-    for item in allConnections:
-        print(item.Name)
-    
 
     boltConnections = []
     boltConnectionsUsedForce = []
@@ -1104,3 +1099,4 @@ for analysisIndex, analysis in enumerate(ExtAPI.DataModel.AnalysisList):
 
 # Stelle initiales Einheitensstem wieder her
 ExtAPI.Application.ActiveUnitSystem = initialUnitSystem
+
