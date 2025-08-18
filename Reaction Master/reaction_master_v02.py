@@ -577,21 +577,33 @@ def collectAllConnections(container, connectionList):
             
 
 def getBoltDataFromName(text): 
+    """
+    Extrahiert Nenndurchmesser [mm] und Streckgrenze [MPa] 
+    aus dem Namen einer Schrauben-Connection.
+
+    Eingabe:
+      text : string (z.B. 'Bolt M12 8.8')
+
+    Rückgabe:
+      (d, f) : Durchmesser [mm], Streckgrenze [MPa]
+      False  : wenn kein passender Eintrag gefunden
+    """
+    
     text = str(text)
 
     d = 0.1  # Standardwert Nenndurchmesser
     f = 640  # Standardwert Streckgrenze
 
     bolt_sizes = {
-        "M3": 3.0, "M4": 4.0, "M5": 5.0, "M6": 6.0, "M8": 8.0, "M10": 10.0, "M12": 12.0,
-        "M14": 14.0, "M16": 16.0, "M18": 18.0, "M20": 20.0, "M22": 22.0,
-        "M24": 24.0, "M27": 27.0, "M30": 30.0, "M36": 36.0,
-        "M42": 42.0, "M48": 48.0, "M56": 56.0, "M64": 64.0
+        "M64": 64.0, "M56": 56.0, "M48": 48.0, "M42": 42.0, "M36": 36.0,
+        "M30": 30.0, "M27": 27.0, "M24": 24.0, "M22": 22.0, "M20": 20.0,
+        "M18": 18.0, "M16": 16.0, "M14": 14.0, "M12": 12.0, "M10": 10.0,
+        "M8": 8.0, "M6": 6.0, "M5": 5.0, "M4": 4.0, "M3": 3.0
     }
 
     yield_strengths = {
-        "3.6": 180, "4.4": 150, "4.6": 240, "4.8": 340, "5.6": 300, "5.8": 420, "6.8": 480,
-        "8.8": 640, "9.8": 660, "10.9": 720, "12.9": 940
+        "12.9": 940, "10.9": 720, "9.8": 660, "8.8": 640, "6.8": 480,
+        "5.8": 420, "5.6": 300, "4.8": 340, "4.6": 240, "4.4": 150, "3.6": 180
     }
 
     for key in bolt_sizes:
@@ -611,25 +623,71 @@ def getBoltDataFromName(text):
     
 
 def tryGetData(name, table):
+    """
+    Liest eine Spalte aus einer Tabellendatenstruktur.
+    Falls Werte nicht konvertierbar sind -> 999999999 einsetzen.
+    
+    name  : Spaltenname (string)
+    table : 2D-Liste (erste Zeile = Header)
+
+    Rückgabe: Liste mit floats (eine pro Zeile)
+    """
+
     for i, col in enumerate(table[0]):
         if col.strip() == name:
-            return [float(row[i]) for row in table[1:]]
+            values = []
+            for row in table[1:]:
+                try:
+                    values.append(float(row[i]))
+                except:
+                    values.append(999999999)
+            return values
     return [0.0] * (len(table) - 1)
 
 
 def getArea(d):
+    """
+    Querschnittsfläche einer Schraube [mm²].
+    d : Nenndurchmesser [mm]
+    """
+
     return math.pi * (d ** 2) / 4.0
 
 
 def getWb(d):
+    """
+    Widerstandsmoment für Biegung [mm³].
+    d : Nenndurchmesser [mm]
+    """
+
     return math.pi * (d ** 3) / 32.0
 
 
 def getWt(d):
+    """
+    Widerstandsmoment für Torsion [mm³].
+    d : Nenndurchmesser [mm]
+    """
+
     return math.pi * (d ** 3) / 16.0
 
 
 def computeStresses(Fx, Fy, Fz, Mx, My, Mz, d, f):
+    """
+    Berechnet Spannungen und Auslastung einer Schraube (konservativ).
+    - Axial- und Biegespannung werden betragsmäßig überlagert.
+    - Vergleichsspannung nach von-Mises-Kriterium.
+
+    Eingaben:
+      Fx,Fy,Fz : Kräfte [N]
+      Mx,My,Mz : Momente [Nmm]
+      d        : Schraubendurchmesser [mm]
+      f        : Streckgrenze [MPa]
+
+    Rückgabe:
+      (sigN, tau, sigB, sigmaV, utilization)
+    """
+
     A = getArea(d)
     Wb = getWb(d)
     Wt = getWt(d)
@@ -638,7 +696,7 @@ def computeStresses(Fx, Fy, Fz, Mx, My, Mz, d, f):
     tau = math.sqrt(Fy**2 + Fz**2) / A + abs(Mx) / Wt
     sigB = math.sqrt(My**2 + Mz**2) / Wb
 
-    sigmaV = math.sqrt((abs(sigN) + sigB)**2 + 3 * tau**2)
+    sigmaV = math.sqrt((abs(sigN) + abs(sigB))**2 + 3 * tau**2)
     utilization = 100*sigmaV / f
 
     return sigN, tau, sigB, sigmaV, utilization
