@@ -41,7 +41,7 @@ def makeFolder(path):
 
 def check_for_stop(directory):
     """
-    Checks if a file named 'stop' or 'stop.txt' exists in the given directory. 
+    Checks if a file named "stop", "stop.txt","kill","kill.txt","exit" or "exit.txt" exists in the given directory. 
     If found, the program exits with a message.
     """
     stop_files = ["stop", "stop.txt","kill","kill.txt","exit","exit.txt"]
@@ -97,7 +97,6 @@ def adjustName(text):
     text = text.replace("= ","")
     text = text.replace("   "," ")
     text = text.replace("  "," ")
-    text = text.replace(" "," ")
     text = text.replace("/","-")
     text = text.replace(":","-")
     text = text.replace("ä","ae")
@@ -304,7 +303,7 @@ def cleanBCTable(rawTable, data_type):
         - "moment" → ["Time [s]", "X [Nmm]", "Y [Nmm]", "Z [Nmm]"]
 
     Alle fehlenden Richtungen werden mit 0 ersetzt.
-    Die Total-Spalte wird ignoriert.
+    Die echte Summenspalte (z.B. "... (Total) [N]") wird ignoriert.
     """
 
     if not rawTable or len(rawTable) < 2:
@@ -320,35 +319,30 @@ def cleanBCTable(rawTable, data_type):
     y_index = -1
     z_index = -1
 
-    for i in range(len(header)):
-        col = str(header[i]).lower()
+    for i, col in enumerate(header):
+        col_low = str(col).lower().strip()
+
+        # Echte Summenspalten erkennen → ignorieren
+        if col_low == "total" or col_low.endswith("(total) [n]") or col_low.endswith("(total) [nmm]"):
+            continue
 
         # Zeitspalte
-        if "time" in col:
+        if "time" in col_low and time_index == -1:
             time_index = i
 
-        # X, Y, Z erkennen, aber "total" ignorieren
-        elif "x" in col and "total" not in col:
+        # X, Y, Z erkennen (auch wenn "total" im Namen vorkommt → nicht ignorieren)
+        elif "x" in col_low and x_index == -1:
             x_index = i
-        elif "y" in col and "total" not in col:
+        elif "y" in col_low and y_index == -1:
             y_index = i
-        elif "z" in col and "total" not in col:
-            z_index = i
-
-        # Fallback: Akzeptiere "total moment/force x" nur wenn nichts anderes gefunden wurde
-        elif "total" in col and "x" in col and x_index == -1:
-            x_index = i
-        elif "total" in col and "y" in col and y_index == -1:
-            y_index = i
-        elif "total" in col and "z" in col and z_index == -1:
+        elif "z" in col_low and z_index == -1:
             z_index = i
 
     # Neue Tabelle initialisieren
     cleanedTable = []
     cleanedTable.append(["Time [s]", "X [%s]" % unit, "Y [%s]" % unit, "Z [%s]" % unit])
 
-    for i in range(1, len(rawTable)):
-        row = rawTable[i]
+    for row in rawTable[1:]:
         newRow = []
 
         # Zeit
@@ -361,12 +355,11 @@ def cleanBCTable(rawTable, data_type):
         # X, Y, Z – mit Fallback 0.0
         for idx in [x_index, y_index, z_index]:
             try:
-                val = str(row[idx]).replace(",", ".")
-                if "e+" in val or "e-" in val:
-                    val = float(val)
+                if idx != -1:
+                    val = str(row[idx]).replace(",", ".")
+                    newRow.append(float(val))
                 else:
-                    val = float(val)
-                newRow.append(val)
+                    newRow.append(0.0)
             except:
                 newRow.append(0.0)
 
@@ -600,7 +593,7 @@ def getBoltDataFromName(text):
       False  : wenn kein passender Eintrag gefunden
     """
     
-    text = str(text)
+    text = adjustName(text)
 
     d = 0.1  # Standardwert Nenndurchmesser
     f = 640  # Standardwert Streckgrenze
@@ -715,7 +708,7 @@ def computeStresses(Fx, Fy, Fz, Mx, My, Mz, d, f):
 
 def write_CSV(path, file_name, data, seperator="."):
     """CSV-Datei schreiben – mit Ersetzen von Dezimalpunkten für IronPython (ACT)"""
-
+    
     if not isEmpty(data):
         try:
             output_data = []
@@ -783,30 +776,38 @@ connectionGroupTypes = [
 ]
 
 # Modell-Informationen
+print("Get model mass")
 modelMass = float(extractValue(ExtAPI.DataModel.Project.Model.Geometry.Mass,"."))*1000 # von t in kg umwandeln
 
 
 for analysisIndex, analysis in enumerate(ExtAPI.DataModel.AnalysisList):
+    print("Read analysis: " +analysis.Name)
     analysis_DIR = makeFolder(os.path.join(model_DIR,"A" + str(analysisIndex+1) + "_" + analysis.Name))
 
     # -------
     # [1] Lasten einlesen
     # -------
-
+    
+    print("Read loads")
     nameListLoads = []
     tableListLoads = []
 
     # Lasten aus Beschleunigungen
     for item in analysis.Children:
+        check_for_stop(user_DIR)
+
         if item.GetType() == accType:
-            nameListLoads.append(adjustName(item.Name))
+            if item.DefineBy == LoadDefineBy.Components:
+                nameListLoads.append(adjustName(item.Name))
             
             # wandel die Bescleunigungstabelle in eine Krafttabelle um
             accTable = readTabularData(item,".")
             accForceTable = createAccelerationForce(-modelMass, accTable)
             tableListLoads.append(accForceTable)
+
         elif item.GetType() == gravType:
-            nameListLoads.append(adjustName(item.Name))
+            if item.DefineBy == LoadDefineBy.Components:
+                nameListLoads.append(adjustName(item.Name))
             
             # wandel die Bescleunigungstabelle in eine Krafttabelle um
             accTable = readTabularData(item,".")
@@ -816,10 +817,11 @@ for analysisIndex, analysis in enumerate(ExtAPI.DataModel.AnalysisList):
     # Lasten aus Einzellasten
     for item in analysis.Children:
         if item.GetType() in loadTypesList:
-            nameListLoads.append(adjustName(item.Name))
+            if item.DefineBy == LoadDefineBy.Components:
+                nameListLoads.append(adjustName(item.Name))
 
-            forceTable = convertLoadForceTable(readTabularData(item,"."))
-            tableListLoads.append(forceTable)
+                forceTable = convertLoadForceTable(readTabularData(item,"."))
+                tableListLoads.append(forceTable)
 
     combinedLoadTable = combineTables(tableListLoads, nameListLoads, nameSumLoad, "force")
 
@@ -827,10 +829,13 @@ for analysisIndex, analysis in enumerate(ExtAPI.DataModel.AnalysisList):
     # -------
     # [2] Lagerreaktionen einlesen
     # -------
+    print("Read boundaries")
     nameListBc = []
     tableListBc = []
 
     for item in analysis.Solution.Children:
+        check_for_stop(user_DIR)
+
         if item.GetType() == resultForceType:
             if item.LocationMethod == bcType:
                 nameListBc.append(adjustName(item.Name))
@@ -840,24 +845,27 @@ for analysisIndex, analysis in enumerate(ExtAPI.DataModel.AnalysisList):
                 tableListBc.append(cleanedTable)
 
     combinedBcTable = combineTables(tableListBc, nameListBc, nameSumBc, "force")
+    printTable(combinedBcTable)
 
 
     # -------
     # [3] Lasten bilanzieren
     # -------
-
+    print("Read force equilibrium")
     combinedResultTable = combineResultTable(combinedLoadTable, combinedBcTable, nameloads=nameSumLoad, nameBCs=nameSumBc ,nameDiff=nameSumDif)
 
 
     # -------
     # [4] Gelenkreaktionen einlesen
     # -------
-
+    print("Read joint reaction")
     # Kraft
     nameListJointForce = []
     tableListJointForce  = []
 
     for item in analysis.Solution.Children:
+        check_for_stop(user_DIR)
+
         if item.GetType() == jointType:
             if item.ResultType == probeForceType:
                 nameListJointForce.append(adjustName(item.Name))
@@ -887,12 +895,14 @@ for analysisIndex, analysis in enumerate(ExtAPI.DataModel.AnalysisList):
     # -------
     # [5] Kontaktreaktionen einlesen
     # -------
-
+    print("Read contact reaction")
     # Kraft
     nameListContactForce = []
     tableListContactForce  = []
 
     for item in analysis.Solution.Children:
+        check_for_stop(user_DIR)
+
         if item.GetType() == resultForceType:
             if item.LocationMethod == contactType:
                 nameListContactForce.append(adjustName(item.Name))
@@ -908,6 +918,8 @@ for analysisIndex, analysis in enumerate(ExtAPI.DataModel.AnalysisList):
     tableListContactMoment  = []
 
     for item in analysis.Solution.Children:
+        check_for_stop(user_DIR)
+        
         if item.GetType() == resultMomentType:
             if item.LocationMethod == contactType:
                 nameListContactMoment.append(adjustName(item.Name))
@@ -922,11 +934,14 @@ for analysisIndex, analysis in enumerate(ExtAPI.DataModel.AnalysisList):
     # -------
     # [6] Balken einlesen
     # -------
+    print("Read beam reaction")
     nameListBeams = []
     tableListBeamsForce = []
     tableListBeamsMoment = []
 
     for item in analysis.Solution.Children:
+        check_for_stop(user_DIR)
+
         if item.GetType() == beamType:
             nameListBeams.append(adjustName(item.Name))
             rawTable = readTabularData(item, ".")
@@ -942,7 +957,7 @@ for analysisIndex, analysis in enumerate(ExtAPI.DataModel.AnalysisList):
     # -------
     # [7] Schrauben auswerten
     # -------
-
+    print("Read bolts")
     # Hauptliste für alle Connections
     allConnections = []
 
@@ -950,18 +965,30 @@ for analysisIndex, analysis in enumerate(ExtAPI.DataModel.AnalysisList):
     for item in Model.Connections.Children:
         collectAllConnections(item, allConnections)
 
+    #print("_____________All Connections________________")
+    #for item in allConnections:
+    #    print(item.Name)
 
     boltConnections = []
     boltConnectionsUsedForce = []
     boltConnectionsUsedMoments = []
 
+    # Connections nach Substring durchsuchen, die auf Schraube hindeuten (e.g. "M12")
     for connection in allConnections:
+        check_for_stop(user_DIR)
         if getBoltDataFromName(connection.Name):
             boltConnections.append(connection)
+
+    #print("_____________Bolt Connections________________")
+    #for item in boltConnections:
+    #    print(item.Name)
+
 
     resultRows = []
 
     for boltConnection in boltConnections:
+        check_for_stop(user_DIR)
+
         boltData = getBoltDataFromName(boltConnection.Name)
         if not boltData:
             continue
@@ -1099,4 +1126,3 @@ for analysisIndex, analysis in enumerate(ExtAPI.DataModel.AnalysisList):
 
 # Stelle initiales Einheitensstem wieder her
 ExtAPI.Application.ActiveUnitSystem = initialUnitSystem
-
