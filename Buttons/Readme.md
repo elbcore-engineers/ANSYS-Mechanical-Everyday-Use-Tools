@@ -2,8 +2,8 @@
 # Buttons
 
 ## Inhalt
-- images_master_v01
-- image_Master.png
+- true_S235_master
+- images_master
 
 ## Beschreibung
 In diesem Ordner finden sich Mechanical Buttons in Python zur Automatisierung
