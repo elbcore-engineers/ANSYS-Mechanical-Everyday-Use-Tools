@@ -30,8 +30,6 @@ def apply_legend_Scheme(maxValue):
     if is_float(maxValue):
         legendSettings.SetLowerBound(BANDS-1,Quantity(maxValue, "MPa"))
         legendSettings.SetUpperBound(BANDS-1,Quantity(maxValue*1.0000000001, "MPa"))
-    if is_float(minValue):
-        legendSettings.SetLowerBound(0,Quantity(minValue, "MPa"))
     
     for i in range(1, BANDS):
         legendSettings.SetBandColorAuto(i, True)
