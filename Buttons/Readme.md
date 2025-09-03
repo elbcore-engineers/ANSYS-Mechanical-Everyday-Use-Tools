@@ -3,6 +3,7 @@
 
 ## Inhalt
 - true_S235_painter_v01.py (aktuell)
+- true_S235_painter.png
 
 ## Beschreibung
 Dieses Python-Snippet lässt sich als Button in Mechanical importieren, um die Farbskala des Conoutplots auf die Bemessungsgrenze zu begrenzen.
