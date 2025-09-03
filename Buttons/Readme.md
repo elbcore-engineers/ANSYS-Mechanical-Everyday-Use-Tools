@@ -3,7 +3,7 @@
 
 ## Inhalt
 - images_master_v01
-- Image_Master.png
+- image_Master.png
 
 ## Beschreibung
 In diesem Ordner finden sich Mechanical Buttons in Python zur Automatisierung
