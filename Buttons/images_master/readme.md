@@ -1,8 +1,8 @@
 # Reaction Master
 
 ## Inhalt
-- images_master_v01.py
-- images_master_v01.png
+- images_master_v01.py (aktuell)
+- images_master.png
 
 ## Beschreibung
 Dieses Python-Snippet lässt sich als Button in Mechanical importieren, um automatisiert hochauflösende Bilder mit transparentem Hintergrund von den Spannungs-, Dehnungs-, und Verformungsplots zu machen.
