@@ -32,10 +32,12 @@ def check_for_stop(directory):
 
 def adjustPath(text):
     text = text.replace("=","")
+    text = text.replace(": ","_")
     text = text.replace("   "," ")
     text = text.replace("  "," ")
     text = text.replace(" ","-")
-    text = text.replace("/",":")
+    text = text.replace("/","-")
+    text = text.replace(":","-")
     text = text.replace("ä","ae")
     text = text.replace("ö","oe")
     text = text.replace("ü","ue")
@@ -57,7 +59,8 @@ def adjustPath(text):
 user_DIR = wbjn.ExecuteCommand(ExtAPI,"returnValue(GetUserFilesDirectory())")
 
 # Get the directory to store the images
-model_DIR = makeFolder(os.path.join(user_DIR,"Result_Images"))
+date = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+model_DIR = makeFolder(os.path.join(user_DIR,"Images_"+str(date)))
 
 # ------
 # Graphic settings
