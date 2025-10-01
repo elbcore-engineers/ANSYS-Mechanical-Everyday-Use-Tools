@@ -347,8 +347,11 @@ if result == DialogResult.OK:
     renameResults = form.renameResults
     groupNewResults = form.groupNewResults
 
-    for item in Model.Connections.Children:
-        collectAllConnections(item, contactObjectList, jointObjectList, beamObjectList, connectionGroupTypes)
+    try:
+        for item in Model.Connections.Children:
+            collectAllConnections(item, contactObjectList, jointObjectList, beamObjectList, connectionGroupTypes)
+    except:
+        print("SOMETHING WENT WRONG DURING GATHERING OF CONNECTION OBJECTS")
 
 
     for analysisIndex, analysis in enumerate(ExtAPI.DataModel.AnalysisList):
@@ -493,9 +496,12 @@ if result == DialogResult.OK:
         # Alle Boundary Conditions sammeln
         # --------------------
         boundaryObjectList = []
+        try:
+            for item in analysis.Children:
+                collectAllBoundaries(item, boundaryObjectList, boundaryTypes)
+        except:
+            print("SOMETHING WENT WRONG DURING GATHERING OF BOUNDARY OBJECTS")
 
-        for item in analysis.Children:
-            collectAllBoundaries(item, boundaryObjectList, boundaryTypes)
 
         for bcObject in boundaryObjectList:
             print("Read Boundary: " + bcObject.Name)
