@@ -999,8 +999,11 @@ contactObjectList = []
 jointObjectList = []
 beamObjectList = []
 
-for item in Model.Connections.Children:
-    collectAllConnections(item, contactObjectList, jointObjectList, beamObjectList, connectionGroupTypes)
+try:
+    for item in Model.Connections.Children:
+        collectAllConnections(item, contactObjectList, jointObjectList, beamObjectList, connectionGroupTypes)
+except:
+    print("SOMETHING WENT WRONG DURING GATHERING OF CONNECTION OBJECTS")
 
 
 for analysisIndex, analysis in enumerate(ExtAPI.DataModel.AnalysisList):
@@ -1301,8 +1304,11 @@ for analysisIndex, analysis in enumerate(ExtAPI.DataModel.AnalysisList):
     # --------------------
     boundaryObjectList = []
 
-    for item in analysis.Children:
-        collectAllBoundaries(item, boundaryObjectList, boundaryTypes)
+    try:
+        for item in analysis.Children:
+            collectAllBoundaries(item, boundaryObjectList, boundaryTypes)
+    except:
+        print("SOMETHING WENT WRONG DURING GATHERING OF BOUNDARY OBJECTS")
 
 
     for bcObject in boundaryObjectList:
