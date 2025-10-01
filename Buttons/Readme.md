@@ -12,7 +12,7 @@ In diesem Ordner finden sich Mechanical Buttons in Python zur Automatisierung
 
 ## Installation
 1. Pyhon-Datei und Bilddatei herunterladen.
-2. Static-Structural in Workbench öffnen.
+2. Modell in Workbench öffnen.
 3. Im oberen Reiter auf "Automation/Manage" klicken - Es öffnet sich der Button Editor.
 4. Oben auf "Click to import a button script".
 5. "dummy_name.py" im Explorer auswählen und auf "öffnen" drücken.
