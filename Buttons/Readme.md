@@ -4,6 +4,8 @@
 ## Inhalt
 - true_S235_master
 - images_master
+- reaction_exporter
+- reaction_generator
 
 ## Beschreibung
 In diesem Ordner finden sich Mechanical Buttons in Python zur Automatisierung
@@ -18,6 +20,6 @@ In diesem Ordner finden sich Mechanical Buttons in Python zur Automatisierung
 7. Oben Links auf "Click to save script for the button".
 
 ## Anwendung
-1. Static Structural-Modell lösen.
+1. Modell lösen.
 2. Auf das entsprechende Button-Symbol im Automation-Reiter drücken.
 
