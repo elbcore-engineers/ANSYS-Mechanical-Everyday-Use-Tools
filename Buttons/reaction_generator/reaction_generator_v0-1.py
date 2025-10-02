@@ -384,7 +384,7 @@ if result == DialogResult.OK:
                                 item.Name = contactObject.Name + " (Force)"
 
                         # Moment
-                        elif item.GetType() == resultMomentType and not hasMoment:
+                        elif item.GetType() == resultMomentType:
                             usedResults.append(item)
                             hasMoment = True
                             if renameResults:
@@ -426,14 +426,14 @@ if result == DialogResult.OK:
                 try:
                     if item.BoundaryConditionSelection == jointObject:
                         
-                        if item.ResultType == probeForceType and not hasForce:
+                        if item.ResultType == probeForceType:
                             usedResults.append(item)
                             hasForce = True
                             if renameResults:
                                 item.Name = jointObject.Name + " (Force)"
                                 #JointResultList.append(item)
 
-                        elif item.ResultType == probeMomentType and not hasMoment:
+                        elif item.ResultType == probeMomentType:
                             usedResults.append(item)
                             hasMoment = True
                             if renameResults:
@@ -514,7 +514,7 @@ if result == DialogResult.OK:
                 try:
                     if item.BoundaryConditionSelection == bcObject:
                         # Force
-                        if item.GetType() == resultForceType and not hasForce:
+                        if item.GetType() == resultForceType:
                             usedResults.append(item)
                             hasForce = True
                             if renameResults:
@@ -522,7 +522,7 @@ if result == DialogResult.OK:
                                 #BCResultList.append(item)
 
                         # Moment
-                        elif item.GetType() == resultMomentType and not hasMoment:
+                        elif item.GetType() == resultMomentType:
                             usedResults.append(item)
                             hasMoment = True
                             if renameResults:
