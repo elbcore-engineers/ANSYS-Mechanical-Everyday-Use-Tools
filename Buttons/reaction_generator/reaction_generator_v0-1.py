@@ -472,7 +472,7 @@ if result == DialogResult.OK:
 
             for item in analysis.Solution.Children:
                 try:
-                    if item.BoundaryConditionSelection == beamObject and not hasBeamResult:
+                    if item.BoundaryConditionSelection == beamObject:
                         hasBeamResult = True
                         usedResults.append(item)
                         if renameResults:
@@ -487,7 +487,7 @@ if result == DialogResult.OK:
 
             if not hasBeamResult:
                 beamSolution = analysis.Solution.AddBeamProbe()
-                beamSolution.BoundaryConditionSelection == beamObject
+                beamSolution.BoundaryConditionSelection = beamObject
                 beamSolution.Name = beamObject.Name + " (Beam)"
                 usedResults.append(momentSolution)
                 BeamResultList.append(beamSolution)
@@ -552,19 +552,19 @@ if result == DialogResult.OK:
         if groupNewResults:
             if not isEmpty(ContactResultList):
                 contactGroupFolder = Tree.Group(ContactResultList)
-                contactGroupFolder.Name = "Generated Contact Results"
+                contactGroupFolder.Name = "Contact Results"
 
             if not isEmpty(JointResultList):
                 jointGroupFolder = Tree.Group(JointResultList)
-                jointGroupFolder.Name = "Generated Joint Results"
+                jointGroupFolder.Name = "Joint Results"
 
             if not isEmpty(BeamResultList):
                 beamGroupFolder = Tree.Group(BeamResultList)
-                beamGroupFolder.Name = "Generated Beam Results"
+                beamGroupFolder.Name = "Beam Results"
 
             if not isEmpty(BCResultList):
                 bcGroupFolder = Tree.Group(BCResultList)
-                bcGroupFolder.Name = "Generated Boundaries Results"
+                bcGroupFolder.Name = "Boundary Conditions Results"
     
 else:
     print("Abgebrochen.")
