@@ -1254,7 +1254,7 @@ for analysisIndex, analysis in enumerate(ExtAPI.DataModel.AnalysisList):
 
                 if evaluateBolts:
                     boltData = getBoltDataFromName(beamObject.Name)
-                    if not boltData:
+                    if boltData:
                         d, A_sp, fp, fm, av = boltData
                         sigN, tau, sigB, sigmaV, utilizationMises, utilizitationShear, utilizitationTension, utilizationEuroCode = computeStresses(Fx, Fy, Fz, Mx, My, Mz, d, A_sp, fp, fm, av)
                         boltResultRow = [
