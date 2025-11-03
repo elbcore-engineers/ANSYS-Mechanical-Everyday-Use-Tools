@@ -1,7 +1,7 @@
 # Pretension Setter
 
 ## Inhalt
-- pretension_setter_v0-1.py (aktuell)
+- pretension_setter_v0-2.py (aktuell)
 - pretension_setter.png
 
 ## Beschreibung
