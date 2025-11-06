@@ -1,7 +1,7 @@
 # Reaction Generator
 
 ## Inhalt
-- reaction_generator_v0-1.py (aktuell)
+- reaction_generator_v0-2.py (aktuell)
 - reaction_generator.png
 
 ## Beschreibung
