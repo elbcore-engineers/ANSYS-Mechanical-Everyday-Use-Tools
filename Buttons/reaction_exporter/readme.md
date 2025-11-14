@@ -1,7 +1,7 @@
 # Reaction Exporter
 
 ## Inhalt
-- reaction_exporter_v0-1.py (aktuell)
+- reaction_exporter_v0-2.py (aktuell)
 - reaction_exporter.png
 
 ## Beschreibung
