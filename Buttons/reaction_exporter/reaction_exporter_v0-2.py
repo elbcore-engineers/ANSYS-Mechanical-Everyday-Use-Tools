@@ -1246,14 +1246,14 @@ for analysisIndex, analysis in enumerate(ExtAPI.DataModel.AnalysisList):
                     Fz = 0
                 else:
                     Fy = Fz
-                    Fy = 0
+                    Fz = 0
 
                 if abs(My) >= abs(Mz):
                     My = My
                     Mz = 0
                 else:
                     My = Mz
-                    My = 0
+                    Mz = 0
 
                 resultRow = [
                     adjustName(beamObject.Name),
