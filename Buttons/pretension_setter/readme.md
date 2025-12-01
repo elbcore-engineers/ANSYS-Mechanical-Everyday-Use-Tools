@@ -1,11 +1,11 @@
 # Pretension Setter
 
 ## Inhalt
-- pretension_setter_v0-2.py (aktuell)
+- pretension_setter_v0-3.py (aktuell)
 - pretension_setter.png
 
 ## Beschreibung
-Dieses Python-Snippet lässt sich als Button in Mechanical importieren, um alle Objekte vom Typ "Bolt Pretension" automatisiert im ersten Step auf einen definierten Wert vorzuspannen und die Vorspannung in allen weiteren Steps zu fixieren.
+Dieses Python-Snippet lässt sich als Button in Mechanical importieren, um alle Objekte vom Typ "Bolt Pretension" automatisiert im ersten Step auf einen definierten Wert vorzuspannen und die Vorspannung in allen weiteren Steps zu fixieren. Die Vorspannung ermittelt sich gemäß VDI.
 
 ## Installation
 1. Pyhon-Datei und Bilddatei herunterladen.
@@ -18,7 +18,7 @@ Dieses Python-Snippet lässt sich als Button in Mechanical importieren, um alle 
 
 ## Anwendung
 1. Modell aufbauen.
-3. Auf das entsprechende Button-Symbol im Automation-Reiter drücken.
-4. Auswahl:
+2. Auf das entsprechende Button-Symbol im Automation-Reiter drücken.
+3. GUI öffnet sich:
    - "Setze Vorpannung auf [N]:": Vorhandene Pretension Objekte werden auf den gesetzten Wert angepasst.
 
