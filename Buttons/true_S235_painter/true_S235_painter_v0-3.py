@@ -46,9 +46,9 @@ class PaintGUI(Form):
         self.analysisObjects = analysisObjects
 
         self.analysisNames = ["All"] + [a.Name for a in analysisObjects]
-        self.paintDefinition = None
+        self.paintDefinition = PaintDefintions()
 
-        self.Text = "Paint Definitions"
+        self.Text = "Result Plot Painter"
         self.Size = Size(360, 260)
 
         # Result Type
@@ -59,14 +59,6 @@ class PaintGUI(Form):
         )
         self.cbResult.SelectedIndex = 0
         self.Controls.Add(self.cbResult)
-
-        # Analysis ComboBox
-        self.cbAnalysis = ComboBox(Location=Point(150, 120), Width=180)
-        self.cbAnalysis.Items.AddRange(
-            System.Array[object](self.analysisNames)
-        )
-        self.cbAnalysis.SelectedIndex = 0
-        self.Controls.Add(self.cbAnalysis)
 
         # Max Value
         Label(Text="Max. Value:", Location=Point(10, 55), Parent=self)
@@ -180,9 +172,6 @@ def apply_legend_Scheme(paintDef = PaintDefintions(), resultType = None):
         legendSettings.SetBandColor(int((BANDS-1)/2.0), Ansys.Mechanical.DataModel.Utilities.Colors.RGB(192,192,192))
         legendSettings.SetBandColor(0, Ansys.Mechanical.DataModel.Utilities.Colors.RGB(0,0,255))
 
-        for i in range(1, BANDS-1):
-            legendSettings.SetBandColorAuto(i, True)
-
         if is_float(paintDef.maxValue):
             legendSettings.SetLowerBound(BANDS-1,Quantity(paintDef.maxValue, paintDef.unit))
         if is_float(paintDef.minValue):
@@ -221,53 +210,6 @@ def is_float(value):
     except:
         return False
 
-def get_maxValue_and_scope():
-    class MaxInputForm(Form):
-        def __init__(self):
-            self.Text = "Bemessungsgrenze"
-            self.Size = Size(320,200)
-            self.StartPosition = FormStartPosition.CenterScreen
-
-            # Label für maxValue
-            self.label = Label()
-            self.label.Text = "Bitte den maximalen Bemessungswert eingeben:"
-            self.label.Location = Point(10,20)
-            self.label.Size = Size(280,20)
-            self.Controls.Add(self.label)
-
-            # TextBox für maxValue
-            self.textbox = TextBox()
-            self.textbox.Location = Point(10,45)
-            self.textbox.Size = Size(280,20)
-            self.Controls.Add(self.textbox)
-
-            # CheckBox für Scope-Auswahl
-            self.checkbox = CheckBox()
-            self.checkbox.Text = "Alle Ergebnisse anpassen"
-            self.checkbox.Location = Point(10,80)
-            self.checkbox.Size = Size(280,20)
-            self.Controls.Add(self.checkbox)
-
-            # OK Button
-            self.okButton = Button()
-            self.okButton.Text = "OK"
-            self.okButton.Location = Point(110,120)
-            self.okButton.DialogResult = DialogResult.OK
-            self.Controls.Add(self.okButton)
-
-            self.AcceptButton = self.okButton
-
-    form = MaxInputForm()
-    if form.ShowDialog() == DialogResult.OK:
-        try:
-            max_val = float(form.textbox.Text)
-        except:
-            max_val = None
-
-        applyToAll = form.checkbox.Checked
-        return max_val, applyToAll
-
-    return None, None
 
 # ------
 # MAIN
@@ -277,25 +219,25 @@ def get_maxValue_and_scope():
 # Daten vorbereiten
 # --------------------------------------------------
 categoryOptions = [
-    "Equivalent Stress",
-    "Principle Stresses",
-    "Total Deformation",
-    "Directional Deformations",
-    "Total Strain",
-    "Plastic Strain"
+    "Equivalent Stress [MPa]",
+    "Principle Stresses [MPa]",
+    "Total Deformation [mm]",
+    "Directional Deformations [mm]",
+    "Total Strain [mm/mm]",
+    "Plastic Strain [mm/mm]"
 ]
 
 categoryMap = {
-    "Equivalent Stress": [DataModelObjectCategory.EquivalentStress],
-    "Principle Stresses": [
+    categoryOptions[0]: [DataModelObjectCategory.EquivalentStress],
+    categoryOptions[1]: [
         DataModelObjectCategory.MaximumPrincipalStress,
         DataModelObjectCategory.MiddlePrincipalStress,
         DataModelObjectCategory.MinimumPrincipalStress
     ],
-    "Total Deformation": [DataModelObjectCategory.TotalDeformation],
-    "Directional Deformations": [DataModelObjectCategory.DirectionalDeformation],
-    "Total Strain": [DataModelObjectCategory.EquivalentTotalStrain],
-    "Plastic Strain": [DataModelObjectCategory.EquivalentPlasticStrainRST]
+    categoryOptions[2]: [DataModelObjectCategory.TotalDeformation],
+    categoryOptions[3]: [DataModelObjectCategory.DirectionalDeformation],
+    categoryOptions[4]: [DataModelObjectCategory.EquivalentTotalStrain],
+    categoryOptions[5]: [DataModelObjectCategory.EquivalentPlasticStrainRST]
 }
 
 analysisObjects = []
